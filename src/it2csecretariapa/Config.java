@@ -20,7 +20,7 @@ public class Config {
         return con;
     }
     
-   public void addRecord(String sql, Object... values) {
+ public void addRecord(String sql, Object... values) {
     try (Connection conn = this.connectDB(); // Use the connectDB method
          PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
@@ -197,4 +197,37 @@ public void deleteRecord(String sql, Object... values) {
         return result;
     }
 
+
+
+    public boolean exists(String sql, int id) {
+        boolean exists = false;
+        try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/yourdatabase", "username", "password");
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+             
+            ps.setInt(1, id);  // Set the ID in the query
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                exists = rs.getInt(1) > 0;  // Check if the count is greater than 0
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return exists;
+    }
+
+    public void addRecord(String sql, String... params) {
+        try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/yourdatabase", "username", "password");
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            for (int i = 0; i < params.length; i++) {
+                ps.setString(i + 1, params[i]);
+            }
+            
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
+    
