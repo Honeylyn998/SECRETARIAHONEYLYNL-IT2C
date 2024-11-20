@@ -50,16 +50,14 @@ public class ItemPawn {
         } while (response.equalsIgnoreCase("yes"));
     }
 
-    public void addItemPawn() {
-        System.out.print("ItemPawn Item Name: ");
-        String iname = sc.nextLine();
+      public void addItemPawn() {
+        String iname = getValidItemNameInput("ItemPawn Item Name: ");
+        String idescription = getValidItemDescriptionInput("ItemPawn Description: ");
 
-        System.out.print("ItemPawn Description: ");
-        String idescription = sc.nextLine();
+        Double iquantity = getValidPositiveDoubleInput("ItemPawn Quantity: ");
+        Double iamount = getValidPositiveDoubleInput("ItemPawn Amount: ");
 
-        Double iquantity = getValidDoubleInput("ItemPawn Quantity: ");
-        Double iamount = getValidDoubleInput("ItemPawn Amount: ");
-
+        // Get current date
         LocalDate currdate = LocalDate.now();
         DateTimeFormatter format = DateTimeFormatter.ofPattern("yy/MM/dd");
         String date = currdate.format(format);
@@ -79,59 +77,118 @@ public class ItemPawn {
 
     public void updateItemPawn() {
         Config conf = new Config();
-        System.out.print("Enter ItemPawn ID to update: ");
-        int id = sc.nextInt();
-        sc.nextLine(); // Consume newline
+        int id = getValidItemID("Enter ItemPawn ID to update: ");
 
-        while (conf.getSingleValue("SELECT COUNT(*) FROM itempawn WHERE i_id = ?", id) == 0) {
-            System.out.println("Selected ID does not exist. Please try again.");
-            id = sc.nextInt();
-            sc.nextLine(); // Consume newline
-        }
+        Double iquantity = getValidPositiveDoubleInput("Enter New Quantity: ");
+        Double iamount = getValidPositiveDoubleInput("Enter New Amount: ");
 
-
-
-        Double iquantity = getValidDoubleInput("Enter New Quantity: ");
-        Double iamount = getValidDoubleInput("Enter New Amount: ");
-
+        // Get current date
         LocalDate currdate = LocalDate.now();
         DateTimeFormatter format = DateTimeFormatter.ofPattern("yy/MM/dd");
         String date = currdate.format(format);
 
         String qry = "UPDATE itempawn SET i_quantity = ?, i_amount = ?, i_date = ? WHERE i_id = ?";
-        conf.updateRecord(qry,  iquantity, iamount, date, id);
+        conf.updateRecord(qry, iquantity, iamount, date, id);
     }
 
     public void deleteItemPawn() {
         Config conf = new Config();
-        System.out.print("Enter ItemPawn ID to delete: ");
-        int id = sc.nextInt();
-        sc.nextLine(); // Consume newline
-
-        while (conf.getSingleValue("SELECT COUNT(*) FROM itempawn WHERE i_id = ?", id) == 0) {
-            System.out.println("Selected ID does not exist. Please try again.");
-            id = sc.nextInt();
-            sc.nextLine(); // Consume newline
-        }
+        int id = getValidItemID("Enter ItemPawn ID to delete: ");
 
         String sqlDelete = "DELETE FROM itempawn WHERE i_id = ?";
         conf.deleteRecord(sqlDelete, id);
         System.out.println("ItemPawn with ID " + id + " has been deleted.");
     }
 
-    // Utility method to ensure valid double input for quantity and amount
-    private Double getValidDoubleInput(String prompt) {
+    
+    private Double getValidPositiveDoubleInput(String prompt) {
         Double value = null;
-        while (value == null) {
+        while (value == null || value <= 0) {
             System.out.print(prompt);
             if (sc.hasNextDouble()) {
                 value = sc.nextDouble();
+                if (value <= 0) {
+                    System.out.println("Please enter a value greater than zero.");
+                }
             } else {
                 System.out.println("Invalid input. Please enter a numeric value.");
-                sc.next();  // Clear the invalid input
+                sc.next(); 
             }
         }
-        sc.nextLine(); // Consume newline after nextDouble()
+        sc.nextLine(); 
         return value;
+    }
+
+   
+    private String getValidStringInput(String prompt) {
+        String value = "";
+        while (value.trim().isEmpty()) {
+            System.out.print(prompt);
+            value = sc.nextLine();
+            if (value.trim().isEmpty()) {
+                System.out.println("Input cannot be empty.");
+            }
+        }
+        return value;
+    }
+
+    
+    private String getValidItemNameInput(String prompt) {
+        String value;
+        while (true) {
+            System.out.print(prompt);
+            value = sc.nextLine();
+            if (value.trim().isEmpty()) {
+                System.out.println("Item Name cannot be empty.");
+            } else if (!value.matches("[a-zA-Z ]+")) {  
+                System.out.println("Item Name cannot contain numbers or special characters.");
+            } else {
+                break;
+            }
+        }
+        return value;
+    }
+
+   
+    private String getValidItemDescriptionInput(String prompt) {
+        String value;
+        while (true) {
+            System.out.print(prompt);
+            value = sc.nextLine();
+            if (value.trim().isEmpty()) {
+                System.out.println("Description cannot be empty.");
+            } else if (!value.matches("[a-zA-Z ]+")) {  
+                System.out.println("Description cannot contain numbers or special characters.");
+            } else {
+                break;
+            }
+        }
+        return value;
+    }
+
+ 
+    private int getValidItemID(String prompt) {
+        int id = -1;
+        while (id <= 0) {
+            System.out.print(prompt);
+            if (sc.hasNextInt()) {
+                id = sc.nextInt();
+                sc.nextLine(); 
+                if (id <= 0) {
+                    System.out.println("ID must be a positive number.");
+                } else {
+                    Config conf = new Config();
+                    while (conf.getSingleValue("SELECT COUNT(*) FROM itempawn WHERE i_id = ?", id) == 0) {
+                        System.out.println("Selected ID does not exist. Please try again.");
+                        id = sc.nextInt();
+                        sc.nextLine(); 
+                    }
+                }
+            } else {
+                System.out.println("Invalid input. Please enter a numeric value.");
+                sc.next();  
+            }
+        }
+        return id;
     }
 }
