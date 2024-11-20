@@ -18,7 +18,7 @@ public class PawnTransaction {
              System.out.println("5. EXIT");
             System.out.println("Enter action");           
             int  act = sc.nextInt();
-           PawnTransaction pt = new PawnTransaction();
+              PawnTransaction pt = new PawnTransaction();
            Customer cs = new Customer();
            ItemPawn ip = new ItemPawn();
             switch(act){
@@ -59,132 +59,190 @@ public class PawnTransaction {
              
     }
  
-    private void addPawnTransaction(){
+    private void addPawnTransaction() {
         Config conf = new Config();
-      Scanner sc = new Scanner(System.in);
+        Scanner sc = new Scanner(System.in);
         Customer cs = new Customer();
-        
-       System.out.print("SELECT ID OF THE SELECTED CUSTOMER: ");
-        int c_id = sc.nextInt();
-        
-        String sql= "SELECT c_id FROM customer WHERE c_id = ?";
-        while(conf.getSingleValue(sql,c_id)  == 0){
-            System.out.print("SELECTED ID DOESNT EXIST PLEASE TRY AGAIN");
-            c_id = sc.nextInt();         
-}
+
+        int c_id = getValidCustomerID("SELECT ID OF THE SELECTED CUSTOMER: ", conf);
+
         ItemPawn ip = new ItemPawn();
         ip.viewItemPawn();
-        System.out.println("Enter ID of Item");
-        int iid = sc.nextInt();
+        int iid = getValidItemID("Enter ID of Item: ", conf);
+
         
-        String pslq = "SELECT i_id FROM itempawn WHERE i_id = ?";
-        while(conf.getSingleValue(pslq, iid) == 0){
-            System.out.println("ITEMPAWN DOES NOT EXIST SELECT AGAIN.");
-            iid = sc.nextInt();
-            
-     
-        }
-        System.out.println("Enter Quantity");
-        double quantity = sc.nextDouble();
-        
-        
+        double quantity = getValidPositiveDoubleInput("Enter Quantity: ");
+
         String amountqry = "SELECT i_amount FROM itempawn WHERE i_id = ?";
         double amount = conf.getSingleValue(amountqry, iid);
         double due = amount * quantity;
-        
-        System.out.println(".......................................................");
-        
-        System.out.println("TOtal DUE:"+due);
-        
+
+        System.out.println(".......................................................");        
+        System.out.println("Total DUE: " + due);
         System.out.println(".......................................................");
 
-        System.out.println("");
+       
+        double ramount = getValidDoubleInput("Enter Amount Received: ", due);
+
+        System.out.println("Cash Received: " + ramount);
+        double change = ramount - due;
+        System.out.println("Change: " + change);
+
+        // Get current date
+        LocalDate currdate = LocalDate.now();
+        DateTimeFormatter format = DateTimeFormatter.ofPattern("yy/MM/dd");
+        String date = currdate.format(format);
+
+        String pawntransactionqry = "INSERT INTO pawntransaction (c_id, i_id, p_quantity, p_due, p_ramount, p_change, p_date)"
+                + " VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        conf.addRecord(pawntransactionqry, c_id, iid, quantity, due, ramount, change, date);
+    }
+
+    public void viewPawnTransaction() {
+        String qry = "SELECT p_id, c_lname, i_iname, p_due, p_ramount, p_change, p_date FROM pawntransaction"
+                    + " LEFT JOIN customer ON customer.c_id = pawntransaction.c_id"
+                    + " LEFT JOIN itempawn ON itempawn.i_id = pawntransaction.i_id";
         
+        String[] hrds = {"PawnTransaction ID", "Customer", "ItemPawn", "Total", "Amount Received", "Change", " Renewal Date"};
+        String[] clmns = {"p_id", "c_lname", "i_iname", "p_due", "p_ramount", "p_change", "p_date"};
         
-       System.out.println("Enter Amount Received:");
-double ramount = sc.nextDouble();
+        Config conf = new Config();
+        conf.viewRecord(qry, hrds, clmns);
+    }
 
-
-while (ramount < due) {
-    System.out.println("Invalid amount, TRY AGAIN!!");
-    ramount = sc.nextDouble();
-}
-
-System.out.println("Cash Received: " + ramount);
-double change = ramount - due;
-System.out.println("Change: " + change);
-
-LocalDate currdate = LocalDate.now();
-DateTimeFormatter format = DateTimeFormatter.ofPattern("yy/MM/dd");
-String date = currdate.format(format);
-
-String pawntransactionqry = "INSERT INTO pawntransaction (c_id, i_id, p_quantity, p_due, p_ramount, p_change, p_date)"
-        + " VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-conf.addRecord(pawntransactionqry, c_id, iid, quantity, due, ramount, change, date);
-}
-     public void viewPawnTransaction() {
-    String qry = "SELECT p_id, c_lname, i_iname, p_due, p_ramount, p_change, p_date FROM pawntransaction"
-               + " LEFT JOIN customer ON customer.c_id = pawntransaction.c_id"
-               + " LEFT JOIN itempawn ON itempawn.i_id = pawntransaction.i_id";
-    
-    String[] hrds = {"PawnTransaction ID", "Customer", "ItemPawn", "Total", "Amount Received", "Change", " Renewal Date"};
-    String[] clmns = {"p_id", "c_lname", "i_iname", "p_due", "p_ramount", "p_change", "p_date"};
-    
-    Config conf = new Config();
-    conf.viewRecord(qry, hrds, clmns);
-
-                
-}
-        private void updatePawnTransaction() {
+    private void updatePawnTransaction() {
         Config conf = new Config();
         Scanner sc = new Scanner(System.in);
+
+        int p_id = getValidPawnTransactionID("Enter PawnTransaction ID to Update: ", conf);
+
+      
+        double quantity = getValidPositiveDoubleInput("Enter New Quantity: ");
         
-        System.out.print("Enter PawnTransaction ID to Update: ");
-        int p_id = sc.nextInt();
-        
-        while (conf.getSingleValue("SELECT p_id FROM pawntransaction WHERE p_id = ?", p_id) == 0) {
-            System.out.print("PawnTransaction ID does not exist. Try Again: ");
-            p_id = sc.nextInt();
-        }
-        
-        System.out.print("Enter New Quantity: ");
-        double quantity = sc.nextDouble();
-        
-        String amountqry = "SELECT i_amount FROM itempawn WHERE i_id = (SELECT i_id FROM pawntransaction WHERE t_id = ?)";
+       
+        String amountqry = "SELECT i_amount FROM itempawn WHERE i_id = (SELECT i_id FROM pawntransaction WHERE p_id = ?)";
         double amount = conf.getSingleValue(amountqry, p_id);
         double due = amount * quantity;
         
         System.out.println("New Total Due: " + due);
         
-        System.out.print("Enter New Amount Received: ");
-        double ramount = sc.nextDouble();
+       
+        double ramount = getValidDoubleInput("Enter New Amount Received: ", due);
         
-        while (ramount < due) {
-            System.out.print("Invalid Amount. Try again: ");
-            ramount = sc.nextDouble();
-        }
         String updateqry = "UPDATE pawntransaction SET p_quantity = ?, p_due = ?, p_ramount = ? WHERE p_id = ?";
         conf.updateRecord(updateqry, quantity, due, ramount, p_id);
         
         System.out.println("PawnTransaction Updated Successfully!");
     }
-    
+
     private void deletePawnTransaction() {
         Config conf = new Config();
         Scanner sc = new Scanner(System.in);
-        
-        System.out.print("Enter PawnTransaction ID to delete: ");
-        int p_id = sc.nextInt();
-        
-        while (conf.getSingleValue("SELECT p_id FROM pawntransaction WHERE p_id = ?", p_id) == 0) {
-            System.out.print("PawnTransaction ID Does Not Exist. Try Again: ");
-            p_id = sc.nextInt();
-        }
-        
+
+        int p_id = getValidPawnTransactionID("Enter PawnTransaction ID to delete: ", conf);
+
         String deleteqry = "DELETE FROM pawntransaction WHERE p_id = ?";
         conf.deleteRecord(deleteqry, p_id);
-        
+
         System.out.println("PawnTransaction Deleted Successfully!");
+    }
+
+   
+    private int getValidCustomerID(String prompt, Config conf) {
+        int c_id = -1;
+        Scanner sc = new Scanner(System.in);
+        while (c_id <= 0) {
+            System.out.print(prompt);
+            if (sc.hasNextInt()) {
+                c_id = sc.nextInt();
+                if (c_id <= 0 || conf.getSingleValue("SELECT c_id FROM customer WHERE c_id = ?", c_id) == 0) {
+                    System.out.println("Invalid customer ID. Please try again.");
+                    c_id = -1; 
+                }
+            } else {
+                System.out.println("Invalid input. Please enter a numeric value.");
+                sc.next(); 
+            }
+        }
+        return c_id;
+    }
+
+    
+    private int getValidItemID(String prompt, Config conf) {
+        int iid = -1;
+        Scanner sc = new Scanner(System.in);
+        while (iid <= 0) {
+            System.out.print(prompt);
+            if (sc.hasNextInt()) {
+                iid = sc.nextInt();
+                if (iid <= 0 || conf.getSingleValue("SELECT i_id FROM itempawn WHERE i_id = ?", iid) == 0) {
+                    System.out.println("Invalid item ID. Please try again.");
+                    iid = -1; 
+                }
+            } else {
+                System.out.println("Invalid input. Please enter a numeric value.");
+                sc.next();
+            }
+        }
+        return iid;
+    }
+
+   
+    private int getValidPawnTransactionID(String prompt, Config conf) {
+        int p_id = -1;
+        Scanner sc = new Scanner(System.in);
+        while (p_id <= 0) {
+            System.out.print(prompt);
+            if (sc.hasNextInt()) {
+                p_id = sc.nextInt();
+                if (p_id <= 0 || conf.getSingleValue("SELECT p_id FROM pawntransaction WHERE p_id = ?", p_id) == 0) {
+                    System.out.println("Invalid PawnTransaction ID. Please try again.");
+                    p_id = -1; 
+                }
+            } else {
+                System.out.println("Invalid input. Please enter a numeric value.");
+                sc.next(); 
+            }
+        }
+        return p_id;
+    }
+
+   
+    private double getValidPositiveDoubleInput(String prompt) {
+        double value = -1;
+        Scanner sc = new Scanner(System.in);
+        while (value <= 0) {
+            System.out.print(prompt);
+            if (sc.hasNextDouble()) {
+                value = sc.nextDouble();
+                if (value <= 0) {
+                    System.out.println("Please enter a positive value.");
+                }
+            } else {
+                System.out.println("Invalid input. Please enter a numeric value.");
+                sc.next();  
+            }
+        }
+        return value;
+    }
+
+
+    private double getValidDoubleInput(String prompt, double due) {
+        double value = -1;
+        Scanner sc = new Scanner(System.in);
+        while (value < due) {
+            System.out.print(prompt);
+            if (sc.hasNextDouble()) {
+                value = sc.nextDouble();
+                if (value < due) {
+                    System.out.println("Amount received must be greater than or equal to the total due.");
+                }
+            } else {
+                System.out.println("Invalid input. Please enter a numeric value.");
+                sc.next();  
+            }
+        }
+        return value;
     }
 }
