@@ -9,7 +9,7 @@ public class Reports {
           Scanner sc = new Scanner(System.in);
         Config conf = new Config();
 
-              String qry = "SELECT "
+             String qry = "SELECT "
                    + "SUM(p_due) AS TotalDue, "
                    + "SUM(p_ramount) AS TotalReceived, "
                    + "SUM(p_change) AS TotalChange "
@@ -102,4 +102,4 @@ public class Reports {
             response = sc.next();
         } while (response.equalsIgnoreCase("yes"));
     }
-}
+} 
